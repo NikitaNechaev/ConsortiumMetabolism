@@ -1,13 +1,16 @@
 import numpy as np
 import xml.etree.ElementTree as et
 import sys
+import os
+
 
 np.set_printoptions(threshold=sys.maxsize)
 
 tree = et.parse('XML_Data/eco00220.xml')
 root = tree.getroot()
-for i in root.findall('entry'):
-    print(i.attrib["id"], '|', str(i.attrib["name"].split(" ")[0]))
+
+#for i in root.findall('entry'):
+#    print(i.attrib["id"], '|', str(i.attrib["name"].split(" ")[0]))
     
 class MapMatrix:
     matrix_headers = []
@@ -27,6 +30,10 @@ class MapMatrix:
         self.matrix = np.zeros((len(self.matrix_headers), len(self.matrix_headers)))
         
         self.reactions_dict = self.reactions_init()
+        
+        self.enders = []
+        self.starters = []
+        self.emptiness()
         
     def headers_init(self) -> dict:
         headers = {}
@@ -58,22 +65,35 @@ class MapMatrix:
             if cols[l] == 0 and rows[l] != 0:
                 col_zero.append(l)
         
-        self.enders = []
-        self.starters = []
-        
         for i in range(len(row_zero)):
             self.enders.append(self.substances_dict[self.matrix_headers[row_zero[i]]])
         for i in range(len(col_zero)):
             self.starters.append(self.substances_dict[self.matrix_headers[col_zero[i]]])
         
-        print(f"Starters: \n{self.starters}\nEnders: \n{self.enders}")
+        self.crosshair()  
+
+        #print(f"Starters: \n{self.starters}\nEnders: \n{self.enders}")
         
     def crosshair(self):
         for i in range(len(self.matrix[:,0])):
             for l in range(len(self.matrix[0,:])):
                 if np.sum(self.matrix[:,0]) == np.sum(self.matrix[0,:]):
                     self.enders.append(self.substances_dict[self.matrix_headers[self.matrix[i][l]]])
-                    
-                       
-mm = MapMatrix(tree)
-print(mm.emptiness())
+
+
+maps = []
+for i in os.listdir("XML_Data"):
+    tree = et.parse(f'XML_Data/{i}')
+    maps.append(MapMatrix(tree))
+    
+full_dict = {}
+
+for i in maps:
+    full_dict[i.map_name] = {"starters": i.starters, "enders": i.enders}
+for i in maps:
+    for l in maps:
+        for j in range(len(full_dict[i.map_name]["starters"])):
+            if full_dict[i.map_name]["starters"][j] in full_dict[l.map_name]["enders"]:
+                print(f"{full_dict[i.map_name]}/{full_dict[i.map_name]["starters"][j]} in {full_dict[l.map_name]}")
+    
+#print(full_dict)
