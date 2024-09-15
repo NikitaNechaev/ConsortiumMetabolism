@@ -3,6 +3,9 @@ import xml.etree.ElementTree as et
 import sys
 import os
 from tqdm import tqdm
+from pyvis.network import Network
+import random
+import pandas as pd
 
 np.set_printoptions(threshold=sys.maxsize)
     
@@ -83,6 +86,7 @@ for i in tqdm(os.listdir("XML_Data")):
 full_dict = {}
 
 f = open('out.txt', 'w')
+out_graph = []
 
 for i in maps:
     full_dict[i.map_name] = {"starters": i.starters, "enders": i.enders}
@@ -91,3 +95,31 @@ for i in tqdm(maps):
         for j in range(len(full_dict[i.map_name]["starters"])):
             if full_dict[i.map_name]["starters"][j] in full_dict[l.map_name]["enders"]:
                 f.write(f"{i.map_name}, {l.map_name}, {full_dict[i.map_name]["starters"][j]}\n")
+                out_graph.append([i.map_name, l.map_name, full_dict[i.map_name]["starters"][j]])               
+
+net = Network(height='1000px', width='100%')
+
+node_ids = []
+node_labels = []
+node_colors = []
+node_weights = []
+edges = []
+
+#net.barnes_hut()
+
+r = lambda: random.randint(0,255)
+print('#%02X%02X%02X' % (r(),r(),r()))
+
+for i in maps:
+    node_ids.append(i.map_name)
+    node_labels.append(i.map_org)
+    node_weights.append(out_graph[0].count(i.map_name) + out_graph[1].count(i.map_name))
+    r = lambda: random.randint(0,255)
+    node_colors.append('#%02X%02X%02X' % (r(),r(),r()))
+for i in range(len(out_graph)):
+    edges.append((out_graph[i][0], out_graph[i][1]))
+
+net.add_nodes(node_ids, color = node_colors, value = node_weights)
+net.add_edges(edges)
+net.toggle_physics(False)
+net.show('graph.html', notebook=False)
